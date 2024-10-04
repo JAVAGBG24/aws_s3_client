@@ -19,7 +19,7 @@ function App() {
     // resize
     Resizer.imageFileResizer(file, 720, 500, "JPEG", 100, 0, async (uri) => {
       try {
-        let { data } = await axios.post("http://localhost:8000/api/upload", {
+        let { data } = await axios.post("http://localhost:8080/api/upload", {
           image: uri,
         });
         console.log("Bild uppladdad", data);
