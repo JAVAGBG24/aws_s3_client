@@ -8,71 +8,66 @@ function App() {
     title: "",
     description: "",
     image: {},
+    loading: false,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
   const [image, setImage] = useState({});
 
   const handleImage = (e) => {
     e.preventDefault();
     let file = e.target.files[0];
-    setUploadButtonText(file.name);
-    setValues({ ...values, loading: true });
-    // resize
-    Resizer.imageFileResizer(file, 720, 500, "JPEG", 100, 0, async (uri) => {
-      try {
-        let { data } = await axios.post("http://localhost:8080/api/upload", {
-          image: uri,
-        });
-        console.log("Bild uppladdad", data);
-        // set image in the state
-        setImage(data);
-        setValues({ ...values, image: { key: data.key } });
-      } catch (err) {
-        console.log(err);
-        setValues({ ...values, image: "" });
-        console.log("Image upload failed. Try later.");
-      } finally {
-        setValues({ ...values, loading: false });
-      }
-    });
+    if (file) {
+      setUploadButtonText(file.name);
+      setSelectedFile(file);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setValues({
-      title: "",
-      description: "",
-      image: {},
-    });
-    setUploadButtonText("Choose Image");
+
+    if (!selectedFile) {
+      alert("Please choose an image first");
+      return;
+    }
+
+    setValues({ ...values, loading: true });
+
+    // rezise
+    Resizer.imageFileResizer(
+      selectedFile,
+      720,
+      500,
+      "JPEG",
+      100,
+      0,
+      async (uri) => {
+        try {
+          let { data } = await axios.post("http://localhost:8080/api/upload", {
+            image: uri,
+          });
+          console.log("Bild uppladdad", data);
+          setImage(data);
+          setValues({
+            title: "",
+            description: "",
+            image: { key: data.key },
+            loading: false,
+          });
+          setUploadButtonText("Choose Image");
+          setSelectedFile(null);
+          alert("Image uploaded successfully!");
+        } catch (err) {
+          console.log(err);
+          setValues({ ...values, image: "", loading: false });
+          alert("Image upload failed. Try later.");
+        }
+      }
+    );
   };
 
   return (
     <>
       <form className="img-form" onSubmit={handleSubmit}>
-        <div className="form-container">
-          <label>Title</label>
-          <input
-            className="form-input"
-            type="text"
-            name="title"
-            value={values.title}
-            onChange={(e) =>
-              setValues({ ...values, [e.target.name]: e.target.value })
-            }
-          />
-        </div>
-        <div className="form-container">
-          <label>Description</label>
-          <input
-            className="form-input"
-            type="text"
-            name="description"
-            value={values.description}
-            onChange={(e) =>
-              setValues({ ...values, [e.target.name]: e.target.value })
-            }
-          />
-        </div>
         <div className="file-input">
           <label>
             {uploadButtonText}
@@ -85,7 +80,9 @@ function App() {
             />
           </label>
         </div>
-        <button type="submit">Upload</button>
+        <button type="submit" disabled={values.loading}>
+          {values.loading ? "Uploading..." : "Upload"}
+        </button>
       </form>
     </>
   );
